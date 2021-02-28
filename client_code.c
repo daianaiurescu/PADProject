@@ -4,6 +4,7 @@
 #include<sys/socket.h>  
 #include<arpa/inet.h> 
 #include <unistd.h>
+#include<json-c/json.h>
 
 #define size 1024
 #define port 8888
@@ -12,6 +13,54 @@ char Username[30];
 char Password[30];
 char message[size];
 char server_reply[size];
+char encoded_pass[30]; //parola codificata(cea introdusa de client)
+
+void encode_pass(char p[30]){
+	int i;
+	for(i=0;i<30;i++){
+		encoded_pass[i]=p[i]+5;
+	}
+	encoded_pass[i+1]='\0'; 
+}
+
+int json_reader(char user[30], char pass[30]){
+	FILE *fp;
+	char buffer[1024];
+    json_object *parsed_json;
+	json_object *username; //username ul din json
+    json_object *password; //parola din json
+	json_object *value;
+	char string_username[30];
+	char string_password[30];
+	int found=0;
+	
+	fp = fopen("users.json", "r");
+	fread(buffer, 1024, 1, fp);
+	fclose(fp);
+	
+	parsed_json = json_tokener_parse(buffer);
+	
+	for(int i=0; i < json_object_array_length(parsed_json); i++){
+		value = json_object_array_get_idx(parsed_json, i);
+		json_object_object_get_ex(value, "username", &username);
+		json_object_object_get_ex(value, "password", &password);
+		strcpy(string_username, json_object_get_string(username));
+		strcpy(string_password, json_object_get_string(password));
+		string_username[strlen(string_username)+1]='\0';
+		string_password[strlen(string_password)+1]='\0';
+		encode_pass(pass);  //pt a codifica parola introdusa de client => in encoded pass 
+		//daca userul si parola(dupa codificare) introduse de client sunt egale cu cele din json=>succes
+		encoded_pass[strlen(encoded_pass)+1]='\0';
+		printf("%s = %s\n", string_username, user);
+		printf("%s = %s\n\n\n", string_password, encoded_pass);
+		if(!strcmp(string_username, user) && !strcmp(string_password, encoded_pass)){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 
 int main(int argc , char *argv[]) {
 
@@ -35,6 +84,9 @@ printf("\nPentru a te conecta la server te rog sa introduci un username si o par
 
 printf("\nUsername:");scanf("%s",Username);
 printf("Password:");scanf("%s",Password);
+
+if(json_reader(Username, Password)==1)
+	printf("Username-ul si parola sunt corecte!");
 
  server.sin_addr.s_addr = inet_addr(ip);
  server.sin_family = AF_INET;
