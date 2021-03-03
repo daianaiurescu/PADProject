@@ -17,7 +17,7 @@ char encoded_pass[30]; //parola codificata(cea introdusa de client)
 
 void encode_pass(char p[30]){
 	int i;
-	for(i=0;i<30;i++){
+	for(i=0;i<strlen(p);i++){
 		encoded_pass[i]=p[i]+5;
 	}
 	encoded_pass[i+1]='\0'; 
@@ -51,8 +51,7 @@ int json_reader(char user[30], char pass[30]){
 		encode_pass(pass);  //pt a codifica parola introdusa de client => in encoded pass 
 		//daca userul si parola(dupa codificare) introduse de client sunt egale cu cele din json=>succes
 		encoded_pass[strlen(encoded_pass)+1]='\0';
-		printf("%s = %s\n", string_username, user);
-		printf("%s = %s\n\n\n", string_password, encoded_pass);
+		
 		if(!strcmp(string_username, user) && !strcmp(string_password, encoded_pass)){
 			return 1;
 		}
@@ -85,7 +84,7 @@ printf("\nPentru a te conecta la server te rog sa introduci un username si o par
 printf("\nUsername:");scanf("%s",Username);
 printf("Password:");scanf("%s",Password);
 
-if(json_reader(Username, Password)==1)
+if(json_reader(Username, Password)==1){
 	printf("Username-ul si parola sunt corecte!");
 
  server.sin_addr.s_addr = inet_addr(ip);
@@ -154,5 +153,6 @@ server_reply[0]='\0';
 	}
 
 return 0;
+}
 	
 }
