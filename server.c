@@ -79,6 +79,8 @@ void send_private_message(char *s, char *name, char *dest){
 	pthread_mutex_lock(&clients_mutex);
 	for(int i=0; i<MAX_CLIENTS; ++i){
 		if(clients[i]){
+			//printf("%s %d\n",clients[i]->name,strcmp(clients[i]->name,name));
+			
 			if(strcmp(clients[i]->name,name)!=0 && strcmp(clients[i]->name, dest)==0){
 				if(write(clients[i]->sockfd, s, strlen(s)) < 0){
 					perror("ERROR: write to descriptor failed");
@@ -169,27 +171,52 @@ void *handle_client(void *arg){
 			
 			online_users(cli->name);
 		} 		
-		else{ 
-			printf("%s", buff_out);
-			strcpy(var, strstr(buff_out, "private "));
-			printf("%d", strlen(var));
-			if(strlen(strcpy(var, strstr(buff_out, "private "))>0)){
-				var[strlen(var)]='\0';
+		//else if(strlen(strstr(buff_out, "private "))>0){ 
+			//printf("ceau\n");
+			//printf("%s", buff_out);
+			//strcpy(var, strstr(buff_out, "private "));
+			//printf("%ld", strlen(var));
+			//if(strlen(strcpy(var, strstr(buff_out, "private "))>0)){
+				//var[strlen(var)]='\0';
+				//while(var[i]!=' ' ){
+				//	user[j]=var[i]; //destinatar
+				//	i++;
+				//	j++;
+				//}
+				//strcpy(mesaj,strstr(buff_out, " "));
+				//sprintf(msg,"%s:%s\n",cli->name,mesaj);
+				//send_private_message(msg,cli->name, user);
+				
+			//}
+			else if(strstr(buff_out,"private ")!=NULL){
+				sprintf(var, "%s",strstr(buff_out," "));
+				i=1;
 				while(var[i]!=' ' ){
 					user[j]=var[i]; //destinatar
 					i++;
 					j++;
 				}
-				strcpy(mesaj,strstr(buff_out, " "));
+				user[j]='\0';
+				j=0;
+				i++;
+				//printf("%s\n",user);
+						while(var[i]!='\0' ){
+							mesaj[j]=var[i]; //mesaj
+							i++;
+							j++;
+						}
+				mesaj[j]='\0';
 				sprintf(msg,"%s:%s\n",cli->name,mesaj);
+				//printf("%s\n",mesaj);
 				send_private_message(msg,cli->name, user);
-				
-			}
-			else{
+				}
+				else {
+				//printf("%s\n",buff_out);
 				sprintf(msg,"%s:%s\n",cli->name,buff_out);
 				send_message(msg, cli->name);
-			}
-		}
+				}
+		bzero(mesaj,SIZE);
+		memset(user,0,32);		
 		bzero(buff_out, SIZE);
 		bzero(msg, 2*SIZE);
 	}
