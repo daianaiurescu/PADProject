@@ -126,7 +126,7 @@ void *handle_client(void *arg){
 	int leave_flag = 0;
 	char msg[2*SIZE];
 	char mesaj[SIZE], user[32], var[SIZE];
-	int i=0, j=0;
+	int i,j;
 	cli_count++;
 	client_t *cli = (client_t *)arg;
 	int receive;
@@ -191,6 +191,7 @@ void *handle_client(void *arg){
 			else if(strstr(buff_out,"private ")!=NULL){
 				sprintf(var, "%s",strstr(buff_out," "));
 				i=1;
+				j=0;
 				while(var[i]!=' ' ){
 					user[j]=var[i]; //destinatar
 					i++;
@@ -216,7 +217,7 @@ void *handle_client(void *arg){
 				send_message(msg, cli->name);
 				}
 		bzero(mesaj,SIZE);
-		memset(user,0,32);		
+		bzero(user,32);	
 		bzero(buff_out, SIZE);
 		bzero(msg, 2*SIZE);
 	}
