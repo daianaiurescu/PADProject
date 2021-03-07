@@ -73,6 +73,23 @@ void send_message(char *s, char *name){
 
 	pthread_mutex_unlock(&clients_mutex);
 }
+
+void send_private_message(char *s, char *name, char *dest){
+	
+	pthread_mutex_lock(&clients_mutex);
+	for(int i=0; i<MAX_CLIENTS; ++i){
+		if(clients[i]){
+			if(strcmp(clients[i]->name,name)!=0 && strcmp(clients[i]->name, dest)==0){
+				if(write(clients[i]->sockfd, s, strlen(s)) < 0){
+					perror("ERROR: write to descriptor failed");
+					break;
+				}
+			}
+		}
+	}
+
+	pthread_mutex_unlock(&clients_mutex);
+}
 //online users
 
 void online_users(char *name){
@@ -106,6 +123,8 @@ void *handle_client(void *arg){
 	char name[32];
 	int leave_flag = 0;
 	char msg[2*SIZE];
+	char mesaj[SIZE], user[32], var[SIZE];
+	int i=0, j=0;
 	cli_count++;
 	client_t *cli = (client_t *)arg;
 	int receive;
@@ -150,9 +169,26 @@ void *handle_client(void *arg){
 			
 			online_users(cli->name);
 		} 		
-		else {
+		else{ 
+			printf("%s", buff_out);
+			strcpy(var, strstr(buff_out, "private "));
+			printf("%d", strlen(var));
+			if(strlen(strcpy(var, strstr(buff_out, "private "))>0)){
+				var[strlen(var)]='\0';
+				while(var[i]!=' ' ){
+					user[j]=var[i]; //destinatar
+					i++;
+					j++;
+				}
+				strcpy(mesaj,strstr(buff_out, " "));
+				sprintf(msg,"%s:%s\n",cli->name,mesaj);
+				send_private_message(msg,cli->name, user);
+				
+			}
+			else{
 				sprintf(msg,"%s:%s\n",cli->name,buff_out);
 				send_message(msg, cli->name);
+			}
 		}
 		bzero(buff_out, SIZE);
 		bzero(msg, 2*SIZE);
