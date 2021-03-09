@@ -14,6 +14,8 @@
 #define SIZE 2048
 #define PORT 8888
 int cli_count = 0;
+int checksum, checksum_server;
+char actual_message[SIZE];
 
 /* Client structure */
 typedef struct{
@@ -25,6 +27,64 @@ typedef struct{
 client_t *clients[MAX_CLIENTS];
 
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+unsigned reverse(unsigned x) {
+   x = ((x & 0x55555555) <<  1) | ((x >>  1) & 0x55555555);
+   x = ((x & 0x33333333) <<  2) | ((x >>  2) & 0x33333333);
+   x = ((x & 0x0F0F0F0F) <<  4) | ((x >>  4) & 0x0F0F0F0F);
+   x = (x << 24) | ((x & 0xFF00) << 8) |
+       ((x >> 8) & 0xFF00) | (x >> 24);
+   return x;
+}
+
+unsigned int crc32a(unsigned char *message) {
+   int i, j;
+   unsigned int byte, crc;
+
+   i = 0;
+   crc = 0xFFFFFFFF;
+   while (message[i] != 0) {
+      byte = message[i];            // Get next byte.
+      byte = reverse(byte);         // 32-bit reversal.
+      for (j = 0; j <= 7; j++) {    // Do eight times.
+         if ((int)(crc ^ byte) < 0)
+              crc = (crc << 1) ^ 0x04C11DB7;
+         else crc = crc << 1;
+         byte = byte << 1;          // Ready next msg bit.
+      }
+      i = i + 1;
+   }
+   return reverse(~crc);
+}
+int extract_checksum(char *message){ //checksum ul mesajului ajuns de la client
+	checksum=(atoi)(strstr(message, "//"));
+	return checksum;
+}
+
+//extrage din mesajul primit doar partea de mesaj, excluzand checksum-ul
+char *extract_actual_message(char *message){
+	int i=0, j=0;
+	while(message[i]!= '/' && message[i+1]!='/'){
+		actual_message[j]=message[i];
+		i++;
+		j++;
+	}
+	actual_message[j]='\0';
+	return actual_message;
+	
+}
+//compara checksum-ul primit de la client, cu checksum-ul calculat pe mesajul ajuns la server
+int verify_checksum(char *message){
+	char *mesaj_server=NULL;
+	sprintf(mesaj_server, "%s", extract_actual_message(message));
+	checksum_server=crc32a(mesaj_server);
+	if(checksum==checksum_server){
+		printf("Mesaj trimis corespunzator");
+		return 1;
+	}
+	return 0;
+	
+}
 
 /* Add clients to queue */
 void queue_add(client_t *cl){
@@ -171,23 +231,7 @@ void *handle_client(void *arg){
 			
 			online_users(cli->name);
 		} 		
-		//else if(strlen(strstr(buff_out, "private "))>0){ 
-			//printf("ceau\n");
-			//printf("%s", buff_out);
-			//strcpy(var, strstr(buff_out, "private "));
-			//printf("%ld", strlen(var));
-			//if(strlen(strcpy(var, strstr(buff_out, "private "))>0)){
-				//var[strlen(var)]='\0';
-				//while(var[i]!=' ' ){
-				//	user[j]=var[i]; //destinatar
-				//	i++;
-				//	j++;
-				//}
-				//strcpy(mesaj,strstr(buff_out, " "));
-				//sprintf(msg,"%s:%s\n",cli->name,mesaj);
-				//send_private_message(msg,cli->name, user);
-				
-			//}
+		
 			else if(strstr(buff_out,"private ")!=NULL){
 				sprintf(var, "%s",strstr(buff_out," "));
 				i=1;
