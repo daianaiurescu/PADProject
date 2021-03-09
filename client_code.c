@@ -12,7 +12,7 @@ char *ip="127.0.0.1";
 char Username[30];
 char Password[30];
 char message[size];
-char complete_message[size];
+char complete_message[2*size];
 char server_reply[size];
 char encoded_pass[30]; //parola codificata(cea introdusa de client)
 int chance_count=0;
@@ -27,10 +27,10 @@ unsigned reverse(unsigned x) {
    return x;
 }
 
-unsigned int crc32a(unsigned char *message) {
+unsigned int crc32a(char *message) {
+   
    int i, j;
    unsigned int byte, crc;
-
    i = 0;
    crc = 0xFFFFFFFF;
    while (message[i] != 0) {
@@ -97,16 +97,16 @@ void send_msg_handler() {
   while(1) {
 	str_overwrite_stdout();
 	 scanf(" %[^\n]", message);
-	// int checksum=crc32a(message);
-	//sprintf(complete_message, "%s//%d", message, checksum);
-	if((send(sock, message, size , 0))<0) {
+	 int checksum=crc32a(message);
+	 sprintf(complete_message, "%s//%d", message, checksum);
+	if((send(sock, complete_message, strlen(complete_message),0))<0) {
 		break;
 	}
     if (strcmp(message, "Exit") == 0) {
 			break;
     } 
 	bzero(message, size);
-	bzero(complete_message, size);
+	bzero(complete_message, 2*size);
   }
   leave_flag = 1;
 }

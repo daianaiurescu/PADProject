@@ -21,7 +21,7 @@ char actual_message[SIZE];
 typedef struct{
 	struct sockaddr_in address;
 	int sockfd;
-	char name[32];
+	char name[30];
 } client_t;
 
 client_t *clients[MAX_CLIENTS];
@@ -37,10 +37,9 @@ unsigned reverse(unsigned x) {
    return x;
 }
 
-unsigned int crc32a(unsigned char *message) {
+unsigned int crc32a(char *message) {
    int i, j;
-   unsigned int byte, crc;
-
+   unsigned int byte, crc;  
    i = 0;
    crc = 0xFFFFFFFF;
    while (message[i] != 0) {
@@ -57,14 +56,14 @@ unsigned int crc32a(unsigned char *message) {
    return reverse(~crc);
 }
 int extract_checksum(char *message){ //checksum ul mesajului ajuns de la client
-	checksum=(atoi)(strstr(message, "//"));
+	checksum=(atoi)(strstr(message, "//")+2);
 	return checksum;
 }
 
 //extrage din mesajul primit doar partea de mesaj, excluzand checksum-ul
 char *extract_actual_message(char *message){
 	int i=0, j=0;
-	while(message[i]!= '/' && message[i+1]!='/'){
+	while(message[i]!= '/' /*&& message[i+1]!='/'*/){
 		actual_message[j]=message[i];
 		i++;
 		j++;
@@ -75,11 +74,11 @@ char *extract_actual_message(char *message){
 }
 //compara checksum-ul primit de la client, cu checksum-ul calculat pe mesajul ajuns la server
 int verify_checksum(char *message){
-	char *mesaj_server=NULL;
-	sprintf(mesaj_server, "%s", extract_actual_message(message));
-	checksum_server=crc32a(mesaj_server);
-	if(checksum==checksum_server){
-		printf("Mesaj trimis corespunzator");
+	//char *mesaj_server=NULL;
+	checksum_server=crc32a(extract_actual_message(message));
+	checksum = extract_checksum(message);
+	if(checksum==(checksum_server/100)){
+		printf("Mesaj trimis corespunzator\n");
 		return 1;
 	}
 	return 0;
@@ -221,6 +220,8 @@ void *handle_client(void *arg){
 			leave_flag = 1;
 		}
 		buff_out[receive-2]='\0';
+		 if(verify_checksum(buff_out)){
+			 strcpy(buff_out,extract_actual_message(buff_out));
 		 if (strcmp(buff_out, "Exit") == 0){
 			sprintf(msg, "%s has left\n", cli->name);
 			printf("%s", msg);
@@ -256,10 +257,10 @@ void *handle_client(void *arg){
 				send_private_message(msg,cli->name, user);
 				}
 				else {
-				//printf("%s\n",buff_out);
 				sprintf(msg,"%s:%s\n",cli->name,buff_out);
 				send_message(msg, cli->name);
 				}
+		 }
 		bzero(mesaj,SIZE);
 		bzero(user,32);	
 		bzero(buff_out, SIZE);
